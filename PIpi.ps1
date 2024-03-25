@@ -1,32 +1,5 @@
 <#
-.SYNOPSIS
-  PowerShell adaptation of WinPEAS.exe / WinPeas.bat
-.DESCRIPTION
-  For the legal enumeration of windows based computers that you either own or are approved to run this script on
-.EXAMPLE
-  # Default - normal operation with username/password audit in drives/registry
-  .\winPeas.ps1
-
-  # Include Excel files in search: .xls, .xlsx, .xlsm
-  .\winPeas.ps1 -Excel
-
-  # Full audit - normal operation with APIs / Keys / Tokens
-  ## This will produce false positives ## 
-  .\winPeas.ps1 -FullCheck 
-
-  # Add Time stamps to each command
-  .\winPeas.ps1 -TimeStamp
-
-.NOTES
-  Version:                    1.3
-  PEASS-ng Original Author:   carlospolop
-  winPEAS.ps1 Author:         @RandolphConley
-  Creation Date:              10/4/2022
-  Website:                    https://github.com/carlospolop/PEASS-ng
-
-  TESTED: PoSh 5,7
-  UNTESTED: PoSh 3,4
-  NOT FULLY COMPATIBLE: PoSh 2 or lower
+Pipi
 #>
 
 ######################## FUNCTIONS ########################
@@ -218,37 +191,9 @@ function Write-Color([String[]]$Text, [ConsoleColor[]]$Color) {
   Write-Host
 }
 
-#Write-Color "    ((,.,/((((((((((((((((((((/,  */" -Color Green
-Write-Color ",/*,..*(((((((((((((((((((((((((((((((((," -Color Green
-Write-Color ",*/((((((((((((((((((/,  .*//((//**, .*((((((*" -Color Green
-Write-Color "((((((((((((((((", "* *****,,,", "\########## .(* ,((((((" -Color Green, Blue, Green
-Write-Color "(((((((((((", "/*******************", "####### .(. ((((((" -Color Green, Blue, Green
-Write-Color "(((((((", "/******************", "/@@@@@/", "***", "\#######\((((((" -Color Green, Blue, White, Blue, Green
-Write-Color ",,..", "**********************", "/@@@@@@@@@/", "***", ",#####.\/(((((" -Color Green, Blue, White, Blue, Green
-Write-Color ", ,", "**********************", "/@@@@@+@@@/", "*********", "##((/ /((((" -Color Green, Blue, White, Blue, Green
-Write-Color "..(((##########", "*********", "/#@@@@@@@@@/", "*************", ",,..((((" -Color Green, Blue, White, Blue, Green
-Write-Color ".(((################(/", "******", "/@@@@@/", "****************", ".. /((" -Color Green, Blue, White, Blue, Green
-Write-Color ".((########################(/", "************************", "..*(" -Color Green, Blue, Green
-Write-Color ".((#############################(/", "********************", ".,(" -Color Green, Blue, Green
-Write-Color ".((##################################(/", "***************", "..(" -Color Green, Blue, Green
-Write-Color ".((######################################(/", "***********", "..(" -Color Green, Blue, Green
-Write-Color ".((######", "(,.***.,(", "###################", "(..***", "(/*********", "..(" -Color Green, Green, Green, Green, Blue, Green
-Write-Color ".((######*", "(####((", "###################", "((######", "/(********", "..(" -Color Green, Green, Green, Green, Blue, Green
-Write-Color ".((##################", "(/**********(", "################(**...(" -Color Green, Green, Green
-Write-Color ".(((####################", "/*******(", "###################.((((" -Color Green, Green, Green
-Write-Color ".(((((############################################/  /((" -Color Green
-Write-Color "..(((((#########################################(..(((((." -Color Green
-Write-Color "....(((((#####################################( .((((((." -Color Green
-Write-Color "......(((((#################################( .(((((((." -Color Green
-Write-Color "(((((((((. ,(############################(../(((((((((." -Color Green
-Write-Color "  (((((((((/,  ,####################(/..((((((((((." -Color Green
-Write-Color "        (((((((((/,.  ,*//////*,. ./(((((((((((." -Color Green
-Write-Color "           (((((((((((((((((((((((((((/" -Color Green
-Write-Color "          by CarlosPolop & RandolphConley" -Color Green
-
 ######################## VARIABLES ########################
 
-# Manually added Regex search strings from https://github.com/carlospolop/PEASS-ng/blob/master/build_lists/sensitive_files.yaml
+# Manually added Regex search strings from https://github.com/carlospolop/Pipi-ng/blob/master/build_lists/sensitive_files.yaml
 
 # Set these values to true to add them to the regex search by default
 $password = $true
@@ -490,26 +435,6 @@ if ($FullCheck) {
   Write-Host "**Full Check Enabled. This will significantly increase false positives in registry / folder check for Usernames / Passwords.**"
 }
 # Introduction    
-Write-Host -BackgroundColor Red -ForegroundColor White  "ADVISORY: WinPEAS - Windows local Privilege Escalation Awesome Script"
-Write-Host -BackgroundColor Red -ForegroundColor White "WinPEAS should be used for authorized penetration testing and/or educational purposes only"
-Write-Host -BackgroundColor Red -ForegroundColor White "Any misuse of this software will not be the responsibility of the author or of any other collaborator"
-Write-Host -BackgroundColor Red -ForegroundColor White "Use it at your own networks and/or with the network owner's explicit permission"
-
-
-# Color Scheme Introduction
-Write-Host -ForegroundColor red  "Indicates special privilege over an object or misconfiguration"
-Write-Host -ForegroundColor green  "Indicates protection is enabled or something is well configured"
-Write-Host -ForegroundColor cyan  "Indicates active users"
-Write-Host -ForegroundColor Gray  "Indicates disabled users"
-Write-Host -ForegroundColor yellow  "Indicates links"
-Write-Host -ForegroundColor Blue "Indicates title"
-
-
-Write-Host "You can find a Windows local PE Checklist here: https://book.hacktricks.xyz/windows-hardening/checklist-windows-privilege-escalation" -ForegroundColor Yellow
-#write-host  "Creating Dynamic lists, this could take a while, please wait..."
-#write-host  "Loading sensitive_files yaml definitions file..."
-#write-host  "Loading regexes yaml definitions file..."
-
 
 ######################## SYSTEM INFORMATION ########################
 
