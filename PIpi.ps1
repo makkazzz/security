@@ -1,5 +1,32 @@
 <#
-Pipi
+.SYNOPSIS
+  PowerShell adaptation of WinPEAS.exe / WinPeas.bat
+.DESCRIPTION
+  For the legal enumeration of windows based computers that you either own or are approved to run this script on
+.EXAMPLE
+  # Default - normal operation with username/password audit in drives/registry
+  .\winPeas.ps1
+
+  # Include Excel files in search: .xls, .xlsx, .xlsm
+  .\winPeas.ps1 -Excel
+
+  # Full audit - normal operation with APIs / Keys / Tokens
+  ## This will produce false positives ## 
+  .\winPeas.ps1 -FullCheck 
+
+  # Add Time stamps to each command
+  .\winPeas.ps1 -TimeStamp
+
+.NOTES
+  Version:                    1.3
+  PEASS-ng Original Author:   carlospolop
+  winPEAS.ps1 Author:         @RandolphConley
+  Creation Date:              10/4/2022
+  Website:                    https://github.com/carlospolop/PEASS-ng
+
+  TESTED: PoSh 5,7
+  UNTESTED: PoSh 3,4
+  NOT FULLY COMPATIBLE: PoSh 2 or lower
 #>
 
 ######################## FUNCTIONS ########################
@@ -71,6 +98,24 @@ Function Start-ACLCheck {
       $Target = Split-Path $Target
       Start-ACLCheck $Target $ServiceName
     }
+  }
+}
+
+Function UnquotedServicePathCheck {
+  Write-Host "Fetching the list of services, this may take a while...";
+  $services = Get-WmiObject -Class Win32_Service | Where-Object { $_.PathName -inotmatch "`"" -and $_.PathName -inotmatch ":\\Windows\\" -and ($_.StartMode -eq "Auto" -or $_.StartMode -eq "Manual") -and ($_.State -eq "Running" -or $_.State -eq "Stopped") };
+  if ($($services | Measure-Object).Count -lt 1) {
+    Write-Host "No unquoted service paths were found";
+  }
+  else {
+    $services | ForEach-Object {
+      Write-Host "Unquoted Service Path found!" -ForegroundColor red
+      Write-Host Name: $_.Name
+      Write-Host PathName: $_.PathName
+      Write-Host StartName: $_.StartName 
+      Write-Host StartMode: $_.StartMode
+      Write-Host Running: $_.State
+    } 
   }
 }
 
@@ -173,9 +218,37 @@ function Write-Color([String[]]$Text, [ConsoleColor[]]$Color) {
   Write-Host
 }
 
+#Write-Color "    ((,.,/((((((((((((((((((((/,  */" -Color Green
+Write-Color ",/*,..*(((((((((((((((((((((((((((((((((," -Color Green
+Write-Color ",*/((((((((((((((((((/,  .*//((//**, .*((((((*" -Color Green
+Write-Color "((((((((((((((((", "* *****,,,", "\########## .(* ,((((((" -Color Green, Blue, Green
+Write-Color "(((((((((((", "/*******************", "####### .(. ((((((" -Color Green, Blue, Green
+Write-Color "(((((((", "/******************", "/@@@@@/", "***", "\#######\((((((" -Color Green, Blue, White, Blue, Green
+Write-Color ",,..", "**********************", "/@@@@@@@@@/", "***", ",#####.\/(((((" -Color Green, Blue, White, Blue, Green
+Write-Color ", ,", "**********************", "/@@@@@+@@@/", "*********", "##((/ /((((" -Color Green, Blue, White, Blue, Green
+Write-Color "..(((##########", "*********", "/#@@@@@@@@@/", "*************", ",,..((((" -Color Green, Blue, White, Blue, Green
+Write-Color ".(((################(/", "******", "/@@@@@/", "****************", ".. /((" -Color Green, Blue, White, Blue, Green
+Write-Color ".((########################(/", "************************", "..*(" -Color Green, Blue, Green
+Write-Color ".((#############################(/", "********************", ".,(" -Color Green, Blue, Green
+Write-Color ".((##################################(/", "***************", "..(" -Color Green, Blue, Green
+Write-Color ".((######################################(/", "***********", "..(" -Color Green, Blue, Green
+Write-Color ".((######", "(,.***.,(", "###################", "(..***", "(/*********", "..(" -Color Green, Green, Green, Green, Blue, Green
+Write-Color ".((######*", "(####((", "###################", "((######", "/(********", "..(" -Color Green, Green, Green, Green, Blue, Green
+Write-Color ".((##################", "(/**********(", "################(**...(" -Color Green, Green, Green
+Write-Color ".(((####################", "/*******(", "###################.((((" -Color Green, Green, Green
+Write-Color ".(((((############################################/  /((" -Color Green
+Write-Color "..(((((#########################################(..(((((." -Color Green
+Write-Color "....(((((#####################################( .((((((." -Color Green
+Write-Color "......(((((#################################( .(((((((." -Color Green
+Write-Color "(((((((((. ,(############################(../(((((((((." -Color Green
+Write-Color "  (((((((((/,  ,####################(/..((((((((((." -Color Green
+Write-Color "        (((((((((/,.  ,*//////*,. ./(((((((((((." -Color Green
+Write-Color "           (((((((((((((((((((((((((((/" -Color Green
+Write-Color "          by CarlosPolop & RandolphConley" -Color Green
+
 ######################## VARIABLES ########################
 
-# Manually added Regex search strings from https://github.com/carlospolop/Pipi-ng/blob/master/build_lists/sensitive_files.yaml
+# Manually added Regex search strings from https://github.com/carlospolop/PEASS-ng/blob/master/build_lists/sensitive_files.yaml
 
 # Set these values to true to add them to the regex search by default
 $password = $true
@@ -417,6 +490,26 @@ if ($FullCheck) {
   Write-Host "**Full Check Enabled. This will significantly increase false positives in registry / folder check for Usernames / Passwords.**"
 }
 # Introduction    
+Write-Host -BackgroundColor Red -ForegroundColor White  "ADVISORY: WinPEAS - Windows local Privilege Escalation Awesome Script"
+Write-Host -BackgroundColor Red -ForegroundColor White "WinPEAS should be used for authorized penetration testing and/or educational purposes only"
+Write-Host -BackgroundColor Red -ForegroundColor White "Any misuse of this software will not be the responsibility of the author or of any other collaborator"
+Write-Host -BackgroundColor Red -ForegroundColor White "Use it at your own networks and/or with the network owner's explicit permission"
+
+
+# Color Scheme Introduction
+Write-Host -ForegroundColor red  "Indicates special privilege over an object or misconfiguration"
+Write-Host -ForegroundColor green  "Indicates protection is enabled or something is well configured"
+Write-Host -ForegroundColor cyan  "Indicates active users"
+Write-Host -ForegroundColor Gray  "Indicates disabled users"
+Write-Host -ForegroundColor yellow  "Indicates links"
+Write-Host -ForegroundColor Blue "Indicates title"
+
+
+Write-Host "You can find a Windows local PE Checklist here: https://book.hacktricks.xyz/windows-hardening/checklist-windows-privilege-escalation" -ForegroundColor Yellow
+#write-host  "Creating Dynamic lists, this could take a while, please wait..."
+#write-host  "Loading sensitive_files yaml definitions file..."
+#write-host  "Loading regexes yaml definitions file..."
+
 
 ######################## SYSTEM INFORMATION ########################
 
@@ -906,6 +999,143 @@ foreach ( $h in ($UniqueServices | Select-Object -Unique).GetEnumerator()) {
   Start-ACLCheck -Target $h.Name -ServiceName $h.Value
 }
 
+
+######################## UNQUOTED SERVICE PATH CHECK ############
+Write-Host ""
+if ($TimeStamp) { TimeElapsed }
+Write-Host -ForegroundColor Blue "=========|| Checking for Unquoted Service Paths"
+# All credit to Ivan-Sincek
+# https://github.com/ivan-sincek/unquoted-service-paths/blob/master/src/unquoted_service_paths_mini.ps1
+
+UnquotedServicePathCheck
+
+
+######################## REGISTRY SERVICE CONFIGURATION CHECK ###
+Write-Host ""
+if ($TimeStamp) { TimeElapsed }
+Write-Host -ForegroundColor Blue "=========|| Checking Service Registry Permissions"
+Write-Host "This will take some time."
+
+Get-ChildItem 'HKLM:\System\CurrentControlSet\services\' | ForEach-Object {
+  $target = $_.Name.Replace("HKEY_LOCAL_MACHINE", "hklm:")
+  Start-aclcheck -Target $target
+}
+
+
+######################## SCHEDULED TASKS ########################
+Write-Host ""
+if ($TimeStamp) { TimeElapsed }
+Write-Host -ForegroundColor Blue "=========|| SCHEDULED TASKS vulnerable check"
+#Scheduled tasks audit 
+
+Write-Host ""
+if ($TimeStamp) { TimeElapsed }
+Write-Host -ForegroundColor Blue "=========|| Testing access to c:\windows\system32\tasks"
+if (Get-ChildItem "c:\windows\system32\tasks" -ErrorAction SilentlyContinue) {
+  Write-Host "Access confirmed, may need futher investigation"
+  Get-ChildItem "c:\windows\system32\tasks"
+}
+else {
+  Write-Host "No admin access to scheduled tasks folder."
+  Get-ScheduledTask | Where-Object { $_.TaskPath -notlike "\Microsoft*" } | ForEach-Object {
+    $Actions = $_.Actions.Execute
+    if ($Actions -ne $null) {
+      foreach ($a in $actions) {
+        if ($a -like "%windir%*") { $a = $a.replace("%windir%", $Env:windir) }
+        elseif ($a -like "%SystemRoot%*") { $a = $a.replace("%SystemRoot%", $Env:windir) }
+        elseif ($a -like "%localappdata%*") { $a = $a.replace("%localappdata%", "$env:UserProfile\appdata\local") }
+        elseif ($a -like "%appdata%*") { $a = $a.replace("%localappdata%", $env:Appdata) }
+        $a = $a.Replace('"', '')
+        Start-ACLCheck -Target $a
+        Write-Host "`n"
+        Write-Host "TaskName: $($_.TaskName)"
+        Write-Host "-------------"
+        [pscustomobject]@{
+          LastResult = $(($_ | Get-ScheduledTaskInfo).LastTaskResult)
+          NextRun    = $(($_ | Get-ScheduledTaskInfo).NextRunTime)
+          Status     = $_.State
+          Command    = $_.Actions.execute
+          Arguments  = $_.Actions.Arguments 
+        } | Write-Host
+      } 
+    }
+  }
+}
+
+
+######################## STARTUP APPLIICATIONS #########################
+Write-Host ""
+if ($TimeStamp) { TimeElapsed }
+Write-Host -ForegroundColor Blue "=========|| STARTUP APPLICATIONS Vulnerable Check"
+"Check if you can modify any binary that is going to be executed by admin or if you can impersonate a not found binary"
+Write-Host "https://book.hacktricks.xyz/windows-hardening/windows-local-privilege-escalation#run-at-startup" -ForegroundColor Yellow
+
+@("C:\Documents and Settings\All Users\Start Menu\Programs\Startup",
+  "C:\Documents and Settings\$env:Username\Start Menu\Programs\Startup", 
+  "$env:ProgramData\Microsoft\Windows\Start Menu\Programs\Startup", 
+  "$env:Appdata\Microsoft\Windows\Start Menu\Programs\Startup") | ForEach-Object {
+  if (Test-Path $_) {
+    # CheckACL of each top folder then each sub folder/file
+    Start-ACLCheck $_
+    Get-ChildItem -Recurse -Force -Path $_ | ForEach-Object {
+      $SubItem = $_.FullName
+      if (Test-Path $SubItem) { 
+        Start-ACLCheck -Target $SubItem
+      }
+    }
+  }
+}
+Write-Host ""
+if ($TimeStamp) { TimeElapsed }
+Write-Host -ForegroundColor Blue "=========|| STARTUP APPS Registry Check"
+
+@("registry::HKLM\Software\Microsoft\Windows\CurrentVersion\Run",
+  "registry::HKLM\Software\Microsoft\Windows\CurrentVersion\RunOnce",
+  "registry::HKCU\Software\Microsoft\Windows\CurrentVersion\Run",
+  "registry::HKCU\Software\Microsoft\Windows\CurrentVersion\RunOnce") | ForEach-Object {
+  # CheckACL of each Property Value found
+  $ROPath = $_
+  (Get-Item $_) | ForEach-Object {
+    $ROProperty = $_.property
+    $ROProperty | ForEach-Object {
+      Start-ACLCheck ((Get-ItemProperty -Path $ROPath).$_ -split '(?<=\.exe\b)')[0].Trim('"')
+    }
+  }
+}
+
+#schtasks /query /fo TABLE /nh | findstr /v /i "disable deshab informa"
+
+
+######################## INSTALLED APPLICATIONS ########################
+Write-Host ""
+if ($TimeStamp) { TimeElapsed }
+Write-Host -ForegroundColor Blue "=========|| INSTALLED APPLICATIONS"
+Write-Host "Generating list of installed applications"
+
+Get-CimInstance -class win32_Product | Select-Object Name, Version | 
+ForEach-Object {
+  Write-Host $("{0} : {1}" -f $_.Name, $_.Version)  
+}
+
+
+Write-Host ""
+if ($TimeStamp) { TimeElapsed }
+Write-Host -ForegroundColor Blue "=========|| LOOKING FOR BASH.EXE"
+Get-ChildItem C:\Windows\WinSxS\ -Filter "amd64_microsoft-windows-lxss-bash*" | ForEach-Object {
+  Write-Host $((Get-ChildItem $_.FullName -Recurse -Filter "*bash.exe*").FullName)
+}
+@("bash.exe", "wsl.exe") | ForEach-Object { Write-Host $((Get-ChildItem C:\Windows\System32\ -Filter $_).FullName) }
+
+
+Write-Host ""
+if ($TimeStamp) { TimeElapsed }
+Write-Host -ForegroundColor Blue "=========|| LOOKING FOR SCCM CLIENT"
+$result = Get-WmiObject -Namespace "root\ccm\clientSDK" -Class CCM_Application -Property * -ErrorAction SilentlyContinue | Select-Object Name, SoftwareVersion
+if ($result) { $result }
+elseif (Test-Path 'C:\Windows\CCM\SCClient.exe') { Write-Host "SCCM Client found at C:\Windows\CCM\SCClient.exe" -ForegroundColor Cyan }
+else { Write-Host "Not Installed." }
+
+
 ######################## NETWORK INFORMATION ########################
 Write-Host ""
 if ($TimeStamp) { TimeElapsed }
@@ -1249,3 +1479,94 @@ Write-Host ""
 if ($TimeStamp) { TimeElapsed }
 Write-Host -ForegroundColor Blue "=========|| Recycle Bin TIP:"
 Write-Host "if credentials are found in the recycle bin, tool from nirsoft may assist: http://www.nirsoft.net/password_recovery_tools.html" -ForegroundColor Yellow
+
+######################## File/Folder Check ########################
+
+Write-Host ""
+if ($TimeStamp) { TimeElapsed }
+Write-Host -ForegroundColor Blue "=========||  Password Check in Files/Folders"
+
+# Looking through the entire computer for passwords
+# Also looks for MCaffee site list while looping through the drives.
+if ($TimeStamp) { TimeElapsed }
+Write-Host -ForegroundColor Blue "=========|| Password Check. Starting at root of each drive. This will take some time. Like, grab a coffee or tea kinda time."
+Write-Host -ForegroundColor Blue "=========|| Looking through each drive, searching for $fileExtensions"
+# Check if the Excel com object is installed, if so, look through files, if not, just notate if a file has "user" or "password in name"
+try { New-Object -ComObject Excel.Application | Out-Null; $ReadExcel = $true }catch {$ReadExcel = $false; if($Excel){
+  Write-Host -ForegroundColor Yellow "Host does not have Excel COM object, will still point out excel files when found."
+}}
+$Drives.Root | ForEach-Object {
+  $Drive = $_
+  Get-ChildItem $Drive -Recurse -Include $fileExtensions -ErrorAction SilentlyContinue -Force | ForEach-Object {
+    $path = $_
+    #Exclude files/folders with 'lang' in the name
+    if ($Path.FullName | select-string "(?i).*lang.*") {
+      #Write-Host "$($_.FullName) found!" -ForegroundColor red
+    }
+    if($Path.FullName | Select-String "(?i).:\\.*\\.*Pass.*"){
+      write-host -ForegroundColor Blue "$($path.FullName) contains the word 'pass'"
+    }
+    if($Path.FullName | Select-String ".:\\.*\\.*user.*" ){
+      Write-Host -ForegroundColor Blue "$($path.FullName) contains the word 'user' -excluding the 'users' directory"
+    }
+    # If path name ends with common excel extensions
+    elseif ($Path.FullName | Select-String ".*\.xls",".*\.xlsm",".*\.xlsx") {
+      if ($ReadExcel -and $Excel) {
+        Search-Excel -Source $Path.FullName -SearchText "user"
+        Search-Excel -Source $Path.FullName -SearchText "pass"
+      }
+    }
+    else {
+      if ($path.Length -gt 0) {
+        # Write-Host -ForegroundColor Blue "Path name matches extension search: $path"
+      }
+      if ($path.FullName | Select-String "(?i).*SiteList\.xml") {
+        Write-Host "Possible MCaffee Site List Found: $($_.FullName)"
+        Write-Host "Just going to leave this here: https://github.com/funoverip/mcafee-sitelist-pwd-decryption" -ForegroundColor Yellow
+      }
+      $regexSearch.keys | ForEach-Object {
+        $passwordFound = Get-Content $path.FullName -ErrorAction SilentlyContinue -Force | Select-String $regexSearch[$_] -Context 1, 1
+        if ($passwordFound) {
+          Write-Host "Possible Password found: $_" -ForegroundColor Yellow
+          Write-Host $Path.FullName
+          Write-Host -ForegroundColor Blue "$_ triggered"
+          Write-Host $passwordFound -ForegroundColor Red
+        }
+      }
+    }  
+  }
+}
+
+######################## Registry Password Check ########################
+
+Write-Host -ForegroundColor Blue "=========|| Registry Password Check"
+# Looking through the entire registry for passwords
+Write-Host "This will take some time. Won't you have a pepsi?"
+$regPath = @("registry::\HKEY_CURRENT_USER\", "registry::\HKEY_LOCAL_MACHINE\")
+# Search for the string in registry values and properties
+foreach ($r in $regPath) {
+(Get-ChildItem -Path $r -Recurse -Force -ErrorAction SilentlyContinue) | ForEach-Object {
+    $property = $_.property
+    $Name = $_.Name
+    $property | ForEach-Object {
+      $Prop = $_
+      $regexSearch.keys | ForEach-Object {
+        $value = $regexSearch[$_]
+        if ($Prop | Where-Object { $_ -like $value }) {
+          Write-Host "Possible Password Found: $Name\$Prop"
+          Write-Host "Key: $_" -ForegroundColor Red
+        }
+        $Prop | ForEach-Object {   
+          $propValue = (Get-ItemProperty "registry::$Name").$_
+          if ($propValue | Where-Object { $_ -like $Value }) {
+            Write-Host "Possible Password Found: $name\$_ $propValue"
+          }
+        }
+      }
+    }
+  }
+  if ($TimeStamp) { TimeElapsed }
+  Write-Host "Finished $r"
+}
+
+-FullCheck 
